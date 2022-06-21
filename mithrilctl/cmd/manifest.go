@@ -37,6 +37,7 @@ var manifestCmd = &cobra.Command{
 			}
 			fmt.Fprintf(os.Stderr, "%s", out)
 		}
+		
 		if istiof {
 			command := fmt.Sprintf("get manifest base")
 			cmdArgs := strings.Fields(command)

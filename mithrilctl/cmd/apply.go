@@ -39,22 +39,24 @@ namespaces and required Istio configmaps.`,
 			cmd.Help()
 			os.Exit(1)
 		}
+
 		client, _, err := CreateClientGo()
 		if err != nil {
 			fmt.Println("error creating k8s client err: ", err.Error())
 		}
+
 		for _, serviceFilePath := range args {
 
-			yfile, err := ioutil.ReadFile(filepath.Join(serviceFilePath))
+			yamlFile, err := ioutil.ReadFile(filepath.Join(serviceFilePath))
 
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 
 			var out []interface{}
-			err = UnmarshalAllYamls(yfile, &out)
+			err = UnmarshalAllYamls(yamlFile, &out)
 			if err != nil {
-				fmt.Println("error unmarshilng yaml file err: ", err.Error())
+				fmt.Println("error unmarshalling yaml file err: ", err.Error())
 			}
 
 			var objs []string
@@ -63,7 +65,7 @@ namespaces and required Istio configmaps.`,
 				objs = append(objs, fmt.Sprintf("%v", string(yb)))
 			}
 
-			var nms []string
+			var namespaces []string
 			for _, f := range objs {
 				decode := scheme.Codecs.UniversalDeserializer().Decode
 				obj, _, _ := decode([]byte(f), nil, nil)
@@ -72,9 +74,9 @@ namespaces and required Istio configmaps.`,
 					if o.Namespace == "" {
 						o.Namespace = "default"
 					}
-					if !Contains(nms, o.Namespace) {
-						nms = append(nms, o.Namespace)
-						cm := v1.ConfigMap{
+					if !Contains(namespaces, o.Namespace) {
+						namespaces = append(namespaces, o.Namespace)
+						configmap := v1.ConfigMap{
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "ConfigMap",
 								APIVersion: "v1",
@@ -84,7 +86,7 @@ namespaces and required Istio configmaps.`,
 								Namespace: o.Namespace,
 							},
 						}
-						n := v1.Namespace{
+						namespace := v1.Namespace{
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "Namespace",
 								APIVersion: "v1",
@@ -93,13 +95,13 @@ namespaces and required Istio configmaps.`,
 								Name: o.Namespace,
 							},
 						}
-						createNm, err := client.CoreV1().Namespaces().Create(context.Background(), &n, metav1.CreateOptions{})
+						createNs, err := client.CoreV1().Namespaces().Create(context.Background(), &namespace, metav1.CreateOptions{})
 						if err == nil {
-							fmt.Printf(fmt.Sprintf("namespace/%s created\n", createNm.Name))
+							fmt.Printf(fmt.Sprintf("namespace/%s created\n", createNs.Name))
 						}
-						createCfg, err := client.CoreV1().ConfigMaps(o.Namespace).Create(context.Background(), &cm, metav1.CreateOptions{})
+						createCm, err := client.CoreV1().ConfigMaps(o.Namespace).Create(context.Background(), &configmap, metav1.CreateOptions{})
 						if err == nil {
-							fmt.Printf(fmt.Sprintf("configmap/%s created\n", createCfg.Name))
+							fmt.Printf(fmt.Sprintf("configmap/%s created\n", createCm.Name))
 						}
 					}
 
@@ -109,13 +111,15 @@ namespaces and required Istio configmaps.`,
 					//o is unknown for us
 				}
 			}
-			command := fmt.Sprintf("apply -f %s", filepath.Join(args[0]))
-			cmdArgs := strings.Fields(command)
+
+			cmd := fmt.Sprintf("apply -f %s", filepath.Join(args[0]))
+			cmdArgs := strings.Fields(cmd)
 
 			wlInstall := exec.Command("kubectl", cmdArgs[0:]...)
 
-			oute, _ := wlInstall.CombinedOutput()
-			fmt.Print(string(oute))
+			output, _ := wlInstall.CombinedOutput()
+
+			fmt.Print(string(output))
 		}
 	},
 }
@@ -141,6 +145,7 @@ func CreateClientGo() (*kubernetes.Clientset, *rest.Config, error) {
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+
 	flag.Parse()
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
@@ -162,12 +167,13 @@ func Contains(s []string, str string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func UnmarshalAllYamls(in []byte, out *[]interface{}) error {
-	r := bytes.NewReader(in)
-	decoder := yaml.NewDecoder(r)
+	reader := bytes.NewReader(in)
+	decoder := yaml.NewDecoder(reader)
 	for {
 		data := make(map[interface{}]interface{})
 		if err := decoder.Decode(&data); err != nil {
@@ -175,9 +181,12 @@ func UnmarshalAllYamls(in []byte, out *[]interface{}) error {
 			if err != io.EOF {
 				return err
 			}
+
 			break
 		}
+
 		*out = append(*out, data)
 	}
+
 	return nil
 }

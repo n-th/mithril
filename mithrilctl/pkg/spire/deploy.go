@@ -13,9 +13,9 @@ func DeploySpire() {
 	cmdArgs := strings.Fields(command)
 	cmd := exec.New()
 	spireInstall := cmd.Command("helm", cmdArgs[0:]...)
-	out, err := spireInstall.CombinedOutput()
+	_, err := spireInstall.CombinedOutput()
 	if err != nil {
-		fmt.Printf("\n%s", out)
+		fmt.Printf("\n%s", err)
 	}
 
 	command = fmt.Sprintf("install -f %s/mithrilctl/helm/spire/spire-agent/values.yaml spire-agent %s/mithrilctl/helm/spire/spire-agent/ --wait --wait-for-jobs --timeout 120s", mithrilPath, mithrilPath)
@@ -24,15 +24,15 @@ func DeploySpire() {
 	spireInstall = cmd.Command("helm", cmdArgs[0:]...)
 	_, err = spireInstall.CombinedOutput()
 	if err != nil {
-		fmt.Printf("\n%s", out)
+		fmt.Printf("\n%s", err)
 	}
 
 	command = fmt.Sprintf("rollout status daemonset -n spire spire-agent --timeout=120s")
 	cmdArgs = strings.Fields(command)
 	cmd = exec.New()
 	spireInstall = cmd.Command("kubectl", cmdArgs[0:]...)
-	out, err = spireInstall.CombinedOutput()
+	_, err = spireInstall.CombinedOutput()
 	if err != nil {
-		fmt.Printf("\n%s", out)
+		fmt.Printf("\n%s", err)
 	}
 }
