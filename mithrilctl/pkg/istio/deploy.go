@@ -2,9 +2,10 @@ package istio
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/spf13/viper"
 	"k8s.io/utils/exec"
-	"strings"
 )
 
 func DeployIstio() {
