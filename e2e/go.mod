@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2
